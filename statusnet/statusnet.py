@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License 
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import urllib, urllib2, httplib, time, re
+import urllib, urllib2, httplib, time, re, ssl
 try:
     from oauth import oauth
     has_oauth = True
@@ -66,10 +66,10 @@ class StatusNet(object):
         else:
             self.is_twitter = False
         if validate_ssl:
-            #TODO: Implement SSL-validating handler and add it to opener here
             self.opener = urllib2.build_opener()
         else:
-            self.opener = urllib2.build_opener()
+            sh = urllib2.HTTPSHandler(context=ssl._create_unverified_context())
+            self.opener = urllib2.build_opener(sh)
         self.use_auth = use_auth
         self.auth_type = auth_type
         self.oauth_token = oauth_token

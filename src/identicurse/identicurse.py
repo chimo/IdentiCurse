@@ -508,6 +508,7 @@ class IdentiCurse(object):
                                   auth_type="oauth",
                                   consumer_key="anonymous",
                                   consumer_secret="anonymous",
+                                  validate_ssl=config.config['validate_ssl'],
                                   save_oauth_credentials=\
                                       config.store_oauth_keys)
             config.config["consumer_key"] = "anonymous"
@@ -515,7 +516,8 @@ class IdentiCurse(object):
         else:
             temp_conn = StatusNet(config.config['api_path'],
                                   config.config['username'],
-                                  config.config['password'])
+                                  config.config['password'],
+                                  validate_ssl=config.config['validate_ssl'])
         print msg["ConfigIsOKInfo"]
         config.config.save()
 
@@ -537,7 +539,8 @@ class IdentiCurse(object):
             else:
                 self.conn = StatusNet(config.config['api_path'],
                                       config.config['username'],
-                                      config.config['password'])
+                                      config.config['password'],
+                                    validate_ssl=config.config['validate_ssl'])
         except Exception, (errmsg):
             sys.exit("ERROR: Couldn't establish connection: %s" % (errmsg))
 
