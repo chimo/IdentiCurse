@@ -129,16 +129,6 @@ else:
 
 base_colours = {}
 
-oauth_consumer_keys = {
-    "quitter.se": "7be891ec0ce81253bc3138446d9dae32",
-    "secure.rainbowdash.net": "e45257fe49a59d5771460c6cc2531e1b",
-    }
-oauth_consumer_secrets = {
-    "quitter.se": "ba501f63bce00ef5b1e1621ee2660d7f",
-    "secure.rainbowdash.net": "6b21ded7b4a470e9d095db11f3359bb7",
-    }
-
-
 class IdentiCurse(object):
     """Contains Main IdentiCurse application"""
 
@@ -514,113 +504,36 @@ class IdentiCurse(object):
                     config.config['notice_limit'])
         # try:
         if config.config['use_oauth']:
-            instance = helpers.domain_regex.findall(
-                config.config['api_path'])[0][2]
-            if not instance in oauth_consumer_keys:
-                print msg['NoLocallyConsumerKeysInfo']
-                req = urllib2.Request("http://identicurse.net/api_keys.json")
-                resp = urllib2.urlopen(req)
-                api_keys = json.loads(resp.read())
-                if not instance in api_keys['keys']:
-                    print msg["NoRemoteConsumerKeysInfor"]
-                    temp_conn = StatusNet(config.config['api_path'],
-                                          auth_type="oauth",
-                                          consumer_key="anonymous",
-                                          consumer_secret="anonymous",
-                                          save_oauth_credentials=\
-                                              config.store_oauth_keys)
-                    config.config["consumer_key"] = "anonymous"
-                    config.config["consumer_secret"] = "anonymous"
-                else:
-                    temp_conn = StatusNet(config.config['api_path'],
-                                          auth_type="oauth",
-                                          consumer_key=\
-                                              api_keys['keys'][instance],
-                                          consumer_secret=\
-                                              api_keys['secrets'][instance],
-                                          save_oauth_credentials=\
-                                              config.store_oauth_keys)
-                    config.config["consumer_key"] = api_keys['keys'][instance]
-                    config.config["consumer_secret"] =\
-                        api_keys['secrets'][instance]
-            else:
-                temp_conn = StatusNet(config.config['api_path'],\
-                                      auth_type="oauth",
-                                      consumer_key=\
-                                          oauth_consumer_keys[instance],
-                                      consumer_secret=\
-                                          oauth_consumer_secrets[instance],
-                                      save_oauth_credentials=\
-                                          config.store_oauth_keys)
+            temp_conn = StatusNet(config.config['api_path'],
+                                  auth_type="oauth",
+                                  consumer_key="anonymous",
+                                  consumer_secret="anonymous",
+                                  save_oauth_credentials=\
+                                      config.store_oauth_keys)
+            config.config["consumer_key"] = "anonymous"
+            config.config["consumer_secret"] = "anonymous"
         else:
             temp_conn = StatusNet(config.config['api_path'],
                                   config.config['username'],
                                   config.config['password'])
-        # except Exception, (errmsg):
-        #     sys.exit("Couldn't establish connection: %s" % (errmsg))
         print msg["ConfigIsOKInfo"]
         config.config.save()
 
     def start_connection(self, config):
         try:
             if config.config["use_oauth"]:
-                instance = helpers.domain_regex.findall(
-                    config.config['api_path'])[0][2]
-                if "consumer_key" in config.config:
-                    self.conn = StatusNet(config.config['api_path'],
-                                          auth_type="oauth",
-                                          consumer_key=\
-                                              config.config["consumer_key"],
-                                          consumer_secret=\
-                                              config.config["consumer_secret"],
-                                          oauth_token=\
-                                              config.config["oauth_token"],
-                                          oauth_token_secret=\
-                                              config.config[\
-                                                  "oauth_token_secret"],
-                                          save_oauth_credentials=\
-                                              config.store_oauth_keys)
-                elif not instance in oauth_consumer_keys:
-                    print msg['NoLocallyConsumerKeysInfo']
-                    req = urllib2.Request(
-                        "http://identicurse.net/api_keys.json")
-                    resp = urllib2.urlopen(req)
-                    api_keys = json.loads(resp.read())
-                    if not instance in api_keys['keys']:
-                        sys.exit(msg['YourInstanceAPIKeysError'] % (locals()))
-                    else:
-                        self.conn = StatusNet(config.config['api_path'],
-                                              auth_type="oauth",
-                                              consumer_key=\
-                                                  api_keys['keys'][instance],
-                                              consumer_secret=\
-                                                 api_keys['secrets'][instance],
-                                              oauth_token=\
-                                                  config.config["oauth_token"],
-                                              oauth_token_secret=\
-                                                  config.config[\
-                                                      "oauth_token_secret"],
-                                              save_oauth_credentials=\
-                                                  config.store_oauth_keys)
-                        config.config["consumer_key"] =\
-                            api_keys['keys'][instance]
-                        config.config["consumer_secret"] =\
-                            api_keys['secrets'][instance]
-                        config.config.save()
-                else:
-                    self.conn = StatusNet(config.config['api_path'],
-                                          auth_type="oauth",
-                                          consumer_key=\
-                                              oauth_consumer_keys[instance],
-                                          consumer_secret=\
-                                              oauth_consumer_secrets[instance],
-                                          oauth_token=\
-                                              config.config["oauth_token"],
-                                          oauth_token_secret=\
-                                              config.config[\
-                                                  "oauth_token_secret"],
-                                          save_oauth_credentials=\
-                                              config.store_oauth_keys)
+                self.conn = StatusNet(config.config['api_path'],
+                                      validate_ssl=config.config['validate_ssl'],
+                                      auth_type="oauth",
+                                      consumer_key="anonymous",
+                                      consumer_secret="anonymous",
+                                      oauth_token=\
+                                          config.config["oauth_token"],
+                                      oauth_token_secret=\
+                                          config.config[\
+                                              "oauth_token_secret"],
+                                      save_oauth_credentials=\
+                                          config.store_oauth_keys)
             else:
                 self.conn = StatusNet(config.config['api_path'],
                                       config.config['username'],
