@@ -506,8 +506,6 @@ class IdentiCurse(object):
         if config.config['use_oauth']:
             temp_conn = StatusNet(config.config['api_path'],
                                   auth_type="oauth",
-                                  consumer_key="anonymous",
-                                  consumer_secret="anonymous",
                                   validate_ssl=config.config['validate_ssl'],
                                   save_oauth_credentials=\
                                       config.store_oauth_keys)
@@ -527,8 +525,6 @@ class IdentiCurse(object):
                 self.conn = StatusNet(config.config['api_path'],
                                       validate_ssl=config.config['validate_ssl'],
                                       auth_type="oauth",
-                                      consumer_key="anonymous",
-                                      consumer_secret="anonymous",
                                       oauth_token=\
                                           config.config["oauth_token"],
                                       oauth_token_secret=\

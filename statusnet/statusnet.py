@@ -16,8 +16,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import urllib, urllib2, httplib, time, re, ssl
+
 try:
-    from oauth import oauth
+    from oauthlib import oauth1
     has_oauth = True
 except ImportError:
     has_oauth = False
@@ -56,7 +57,7 @@ class StatusNetError(Exception):
             Exception.__init__(self, "Error %d: %s" % (self.errcode, self.details))
 
 class StatusNet(object):
-    def __init__(self, api_path, username="", password="", use_auth=True, auth_type="basic", consumer_key=None, consumer_secret=None, oauth_token=None, oauth_token_secret=None, validate_ssl=True, save_oauth_credentials=None):
+    def __init__(self, api_path, username="", password="", use_auth=True, auth_type="basic", oauth_token=None, oauth_token_secret=None, validate_ssl=True, save_oauth_credentials=None):
         import base64
         self.api_path = api_path
         if self.api_path[-1] == "/":  # We don't want a surplus / when creating request URLs. Sure, most servers will handle it well, but why take the chance?
@@ -87,7 +88,6 @@ class StatusNet(object):
                     raise Exception("Invalid credentials")
             elif auth_type == "oauth":
                 if has_oauth:
-                    self.consumer = oauth.OAuthConsumer(str(consumer_key), str(consumer_secret))
                     self.oauth_initialize()
                     if self.is_twitter:
                         self.api_path += "/1"
@@ -123,8 +123,6 @@ class StatusNet(object):
             if self.save_oauth_credentials is not None:
                 self.save_oauth_credentials(self.oauth_token, self.oauth_token_secret)
 
-        self.token = oauth.OAuthToken(str(self.oauth_token), str(self.oauth_token_secret))
-
     def __makerequest(self, resource_path, raw_params={}, force_get=False):
         params = urllib.urlencode(raw_params)
         
@@ -146,16 +144,20 @@ class StatusNet(object):
         elif self.auth_type == "oauth":
             resource_url = "%s/%s" % (self.api_path, resource_path)
 
-            if len(raw_params) > 0 and not force_get:
-                oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, self.token, http_method="POST", http_url=resource_url, parameters=raw_params)
-            else:
-                oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, self.token, http_method="GET", http_url=resource_url, parameters=raw_params)
-            oauth_request.sign_request(oauth.OAuthSignatureMethod_HMAC_SHA1(), self.consumer, self.token)
+            if len(raw_params) > 0 and force_get:
+                resource_url = "%s?%s" % (resource_url, params)
+
+            client = oauth1.Client("anonymous", client_secret="anonymous",
+                    resource_owner_key=self.oauth_token, resource_owner_secret=self.oauth_token_secret)
 
             if len(raw_params) > 0 and not force_get:
-                request = urllib2.Request(resource_url, data=oauth_request.to_postdata(), headers=oauth_request.to_header())
+                uri, headers, body = client.sign(resource_url, http_method="POST",
+                        headers={"Content-Type": "application/x-www-form-urlencoded"}, body=params)
+
+                request = urllib2.Request(uri, data=body, headers=headers)
             else:
-                request = urllib2.Request(oauth_request.to_url(), headers=oauth_request.to_header())
+                uri, headers, body = client.sign(resource_url)
+                request = urllib2.Request(uri, headers=headers)
 
         success = False
         response = None
@@ -184,7 +186,7 @@ class StatusNet(object):
             raise StatusNetError(-1, "Could not successfully read any response. Please check that your connection is working.")
 
         content = response.read()
-    
+
         try:
             return json.loads(content)
         except ValueError:  # it wasn't JSON data, return it raw
@@ -577,19 +579,28 @@ class StatusNet(object):
 # will not be implemented unless this module moves to using OAuth instead of basic
 
     def oauth_request_token(self):
-        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, callback="oob", http_method="POST", http_url="%s/%s" % (self.api_path, "oauth/request_token"))
-        oauth_request.sign_request(oauth.OAuthSignatureMethod_HMAC_SHA1(), self.consumer, None)
-        request = urllib2.Request("%s/%s" % (self.api_path, "oauth/request_token"), data=oauth_request.to_postdata(), headers=oauth_request.to_header())
+        endpoint = self.api_path + "/oauth/request_token"
+
+        client = oauth1.Client("anonymous", client_secret="anonymous", callback_uri="oob")
+        uri, headers, body = client.sign(endpoint)
+
+        request = urllib2.Request(endpoint, data=body, headers=headers)
+
         return self.opener.open(request).read()
     
     def oauth_authorize(self, request_token):
         return raw_input("To authorize IdentiCurse to access your account, you must go to %s/oauth/authorize?oauth_token=%s in your web browser.\nPlease enter the verification code you receive there: " % (self.api_path, request_token))
 
     def oauth_access_token(self, request_token, request_token_secret, verifier):
-        req_token = oauth.OAuthToken(str(request_token), str(request_token_secret))
-        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=req_token, verifier=verifier, callback="oob", http_method="POST", http_url="%s/%s" % (self.api_path, "oauth/access_token"))
-        oauth_request.sign_request(oauth.OAuthSignatureMethod_HMAC_SHA1(), self.consumer, req_token)
-        request = urllib2.Request("%s/%s" % (self.api_path, "oauth/access_token"), data=oauth_request.to_postdata(), headers=oauth_request.to_header())
+        endpoint = self.api_path + "/oauth/access_token"
+
+        client = oauth1.Client("anonymous", client_secret="anonymous",
+            resource_owner_key=request_token, resource_owner_secret=request_token_secret,
+            verifier=verifier)
+
+        uri, headers, body = client.sign(endpoint)
+
+        request = urllib2.Request(endpoint, data=body, headers=headers)
         return self.opener.open(request).read()
 
 ######## Search ########

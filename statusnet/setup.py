@@ -23,7 +23,7 @@ setup(
     py_modules = ['statusnet'],
     version = '0.1.0-dev',
     install_requires=[
-        "oauth >= 1.0.1",
+        "oauthlib >= 1.0.3"
         ],
 
     author = "Psychedelic Squid and Reality",
