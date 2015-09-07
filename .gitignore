@@ -1,1 +1,7 @@
 *.py[o|c]
+build
+dist
+*.egg-info
+*.swp
+statusnet/build
+
